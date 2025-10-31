@@ -1,0 +1,8 @@
+XPath = “XML Path Language.”
+
+It describes where elements live in the hierarchy of tags, attributes, and text nodes.
+It’s tree-based, not text-based.
+
+Example : tree.xpath('//div[@class="card"]/span/text()')
+
+Go anywhere (//), find a <div> whose class attribute = 'card', then find its child <span> and get its text.
