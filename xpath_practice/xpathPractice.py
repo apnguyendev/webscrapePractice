@@ -29,4 +29,8 @@ print("Python Titles:", python_titles)
 # 4a. Title that contains "Master C++"
 cpp_titles = htmlTree.xpath('//h2[contains(., "Mastering C++")]/text()')
 print("CPP Titles:", cpp_titles)
+
 # 5. All prices
+# prices = htmlTree.xpath('//span/text()')
+prices = htmlTree.xpath('//span[@class="price"]/text()')
+print("Prices:",prices)
