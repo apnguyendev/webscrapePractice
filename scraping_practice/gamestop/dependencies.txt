@@ -1,0 +1,9 @@
+Depencies that I have installed will be listed here.
+
+1. playwright - 
+
+Install instructions:
+pip install playwright
+python -m playwright install
+
+Use: Error 403 when attempting to use request.get on gamestop. Apparently this is Cloudflare gating the url from non real looking browsers
