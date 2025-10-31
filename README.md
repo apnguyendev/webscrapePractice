@@ -1,2 +1,3 @@
 # webscrapePractice
-Attempting to webscrape
+Attempting to webscrape - ethically of course :)
+
