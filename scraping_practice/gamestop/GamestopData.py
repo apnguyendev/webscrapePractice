@@ -1,27 +1,33 @@
-import requests, itertools
-from urllib.parse import urljoin
-from playwright.sync_api import sync_playwright
 from lxml import html
+from scrapfly import ScrapflyClient, ScrapeConfig, ScrapeApiResponse
+from urllib.parse import urljoin
 
-targetUrl = "https://www.gamestop.com/api/proxy/search/shopper-search/v1/organizations/f_ecom_bcpk_prd/product-search"
+BASE = "https://www.gamestop.com"
 
+# Initialize Scrapfly
+scrapfly= ScrapflyClient(key="scp-live-8bce1cd02b76464ba1a709eca710a4fc")
 
-# Note : chatgpt generated params, no clue if this is actually valid. Will revisit this later
-params = {
-    "siteId": "gamestop-us",
-    "q": "",
-    "refine": ["cgid=gradedcollectibles", "price=(0..10000)", "c_category=TCG Cards"],
-    "sort": "release-date-descending",
-    "expand": "custom_properties,images,prices",
-    "offset": 0,
-    "limit": 25
-}
+# Scrape target gamestop page, for all parameters review : https://scrapfly.io/docs/scrape-api/getting-started#spec
+response: ScrapeApiResponse = scrapfly.scrape(ScrapeConfig(
+   url="https://www.gamestop.com/graded-trading-cards?q=&offset=0&refine=cgid=gradedcollectibles&refine=price=(0..10000)&refine=c_category=TCG+Cards&limit=25&sort=release-date-descending",
+   proxy_pool="public_residential_pool",
+   country="us",
+   asp=True,
+   render_js=True,
+))
 
-headers = {"User-Agent": "Mozilla/5.0"}
+rawHtml = response.scrape_result["content"]
 
-r = requests.get(targetUrl, params=params, headers=headers)
-print(r.status_code)
-print(r.headers.get("Content-Type"))
-print(r.text[:500])
+htmlTree = html.fromstring(rawHtml)
 
-# data = r.json()
+card_list = htmlTree.xpath('//div[contains(@class, "item-grid items-center")]')
+
+results = []
+
+for card in card_list:
+    cardhref = card.xpath('.//a[contains(@href,"/graded-trading-cards/graded-cards")]/@href')
+    results.append({"url": cardhref})
+    
+# for r in results:
+#     print(r)
+# print(response.scrape_result["content"])

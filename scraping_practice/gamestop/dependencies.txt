@@ -1,9 +1,10 @@
 Depencies that I have installed will be listed here.
 
-1. playwright - 
+1. Scrapfly API to webscrape
 
-Install instructions:
-pip install playwright
-python -m playwright install
+I am having issues bypassing cloudflare when using "request.get"
+As of now the solution is to use scrapfly which is able to bypass cloudflare
 
-Use: Error 403 when attempting to use request.get on gamestop. Apparently this is Cloudflare gating the url from non real looking browsers
+Concerns: 
+    - Cloudflare seems to take a few seconds to fetch data. Not sure if this is typical for webscraping. As of now it is not a big issue but I may need
+      to look into alternatives eventually
