@@ -30,4 +30,4 @@ for card in card_list:
     
 # for r in results:
 #     print(r)
-# print(response.scrape_result["content"])
+
