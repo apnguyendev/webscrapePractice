@@ -1,0 +1,3 @@
+Depencies that I have installed will be listed here.
+
+pip install selenium webdriver-manager lxml
