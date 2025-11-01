@@ -30,4 +30,3 @@ for card in card_list:
     
 # for r in results:
 #     print(r)
-
