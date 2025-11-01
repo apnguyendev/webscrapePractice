@@ -1,33 +1,37 @@
-from lxml import html
-from scrapfly import ScrapflyClient, ScrapeConfig, ScrapeApiResponse
+import requests
 from urllib.parse import urljoin
+from lxml import html
 
-BASE = "https://www.gamestop.com"
+# Target URL
+TARGETURL = (
+    "https://www.gamestop.com/graded-trading-cards?q=&offset=0&refine=cgid=gradedcollectibles&refine=price=(0..10000)&refine=c_category=TCG+Cards&limit=25&sort=release-date-descending"
+)
 
-# Initialize Scrapfly
-scrapfly= ScrapflyClient(key="scp-live-8bce1cd02b76464ba1a709eca710a4fc")
 
-# Scrape target gamestop page, for all parameters review : https://scrapfly.io/docs/scrape-api/getting-started#spec
-response: ScrapeApiResponse = scrapfly.scrape(ScrapeConfig(
-   url="https://www.gamestop.com/graded-trading-cards?q=&offset=0&refine=cgid=gradedcollectibles&refine=price=(0..10000)&refine=c_category=TCG+Cards&limit=25&sort=release-date-descending",
-   proxy_pool="public_residential_pool",
-   country="us",
-   asp=True,
-   render_js=True,
-))
+LISTING = (
+    "https://www.gamestop.com/graded-collectibles/"
+    "graded-cards/search?cgid=gradedcollectibles"
+)
 
-rawHtml = response.scrape_result["content"]
+headers = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/141.0.0.0 Safari/537.36"
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Origin": "https://www.gamestop.com",
+    "Referer": LISTING,
+}
 
-htmlTree = html.fromstring(rawHtml)
+r = requests.get(TARGETURL, headers=headers)
 
-card_list = htmlTree.xpath('//div[contains(@class, "item-grid items-center")]')
 
-results = []
+print("Status:", r.status_code)
+print("Content-Type:", r.headers.get("Content-Type"))
+# print(r.text)
 
-for card in card_list:
-    cardhref = card.xpath('.//a[contains(@href,"/graded-trading-cards/graded-cards")]/@href')
-    results.append({"url": cardhref})
-    
-# for r in results:
-#     print(r)
 
+# data = r.json()
+# print(data)
