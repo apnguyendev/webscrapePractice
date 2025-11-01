@@ -1,5 +1,6 @@
 # Import third party libraries
-from urllib.parse import urljoin
+import re
+from urllib.parse import urlparse, urljoin
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -51,11 +52,38 @@ def get_card_urls():
 
     return urls
 
+# --- Parser: Extract card details from URL ---
+def parse_card_url(url):
+    """
+    Extracts year, card name, PSA grade, and PSA serial number from a GameStop card URL.
+    """
+    path = urlparse(url).path  # Extract path part of the URL
+    pattern = re.compile(
+        r"/(?P<year>\d{4})-(?P<card>.+?)-psa-(?P<grade>\d+)/PSA(?P<serial>\d+)\.html"
+    )
+
+    match = pattern.search(path)
+    if not match:
+        return None
+
+    year = match.group("year")
+    card_name = match.group("card").replace("-", " ").strip()
+    psa_grade = match.group("grade")
+    serial_number = match.group("serial")
+
+    return {
+        "year": year,
+        "card_name": card_name,
+        "psa_grade": psa_grade,
+        "serial_number": serial_number,
+    }
 
 if __name__ == "__main__":
 
     card_urls = get_card_urls()
 
     print(f"Found {len(card_urls)} cards:\n")
-    for u in card_urls:
-        print(u)
+    for url in card_urls:
+        details = parse_card_url(url)
+        if details:
+            print(details)
