@@ -6,6 +6,8 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import StaleElementReferenceException
+
 import json
 import os
 from datetime import datetime, timedelta
@@ -176,9 +178,6 @@ def needs_processing(card, existing_entry, price_change_threshold=0.01, max_age_
     - If GameStop price changed by >= threshold → True
     - If last_checked older than max_age_hours → True
     - Else → False
-
-    Right now we are only COMPUTING this; we will plug in the actual
-    ALT fetch later.
     """
     # Brand new serial: always process
     if existing_entry is None:
@@ -192,7 +191,6 @@ def needs_processing(card, existing_entry, price_change_threshold=0.01, max_age_
         if old_price == 0 and current_price != 0:
             return True
 
-        # percentage change
         denominator = old_price if old_price != 0 else 0.01
         change_ratio = abs(current_price - old_price) / abs(denominator)
 
@@ -207,10 +205,107 @@ def needs_processing(card, existing_entry, price_change_threshold=0.01, max_age_
             if datetime.utcnow() - last_checked > timedelta(hours=max_age_hours):
                 return True
         except Exception:
-            # if parsing fails, be safe and reprocess
-            return True
+            return True  # be safe if parsing fails
 
     return False
+
+
+# =========================
+# ALT interaction (step 1)
+# =========================
+
+def search_alt_for_serial(serial):
+    """
+    Open ALT, search for ONE PSA cert #, hit Enter,
+    then click the first result row button (the one that
+    contains the card title text, e.g.,
+    '2025 Pokemon Scarlet and Violet Journey Together Illustration Rare Wailord #162').
+    """
+    if not serial:
+        print("[INFO] No serial provided for ALT.")
+        return
+
+    service = Service(executable_path="chromedriver.exe")
+    driver = webdriver.Chrome(service=service)
+
+    try:
+        driver.get(ALT_HOME)
+
+        # Wait for the search input to be present
+        search_input = WebDriverWait(driver, 20).until(
+            EC.presence_of_element_located(
+                (By.ID, "universal-search-autocomplete")
+            )
+        )
+
+        # Type serial and press ENTER
+        search_input.clear()
+        search_input.send_keys(serial)
+        search_input.send_keys(Keys.ENTER)
+        print(f"[ALT] Submitted serial {serial}")
+
+        # Give React a moment to start rendering results
+        time.sleep(1)
+
+        skip_labels = {"Filters", "Listed Date", "Sold listings", "Save search"}
+
+        def click_result_button():
+            """
+            Keep trying to find and click a 'real' result row button.
+            Returns True if clicked, False if time runs out.
+            """
+            end_time = time.time() + 20  # up to 20 seconds total
+            while time.time() < end_time:
+                try:
+                    buttons = driver.find_elements(
+                        By.XPATH,
+                        "//main//button[contains(@class, 'MuiButtonBase-root')]"
+                    )
+                except StaleElementReferenceException:
+                    # DOM changed while getting buttons; retry
+                    time.sleep(0.5)
+                    continue
+
+                for btn in buttons:
+                    try:
+                        text = btn.text.strip()
+                    except StaleElementReferenceException:
+                        # This button went stale; skip and keep scanning
+                        continue
+
+                    if not text:
+                        continue
+                    if text in skip_labels:
+                        continue
+                    # Listing titles are long text, not tiny labels
+                    if len(text) <= 20:
+                        continue
+
+                    # Try clicking this candidate immediately
+                    try:
+                        btn.click()
+                        print(f"[ALT] Clicked result button with text: {text[:80]}...")
+                        return True
+                    except StaleElementReferenceException:
+                        # It went stale between reading text and click; try again
+                        break  # break inner loop, re-scan buttons
+
+                time.sleep(0.5)
+
+            return False
+
+        clicked = click_result_button()
+        if not clicked:
+            print("[ALT] Could not find a suitable result button to click within timeout.")
+
+        # Short pause so you can visually confirm while testing
+        time.sleep(3)
+
+    except Exception as e:
+        print(f"[ERROR] Problem interacting with ALT: {e}")
+
+    finally:
+        driver.quit()
 
 
 if __name__ == "__main__":
@@ -221,7 +316,7 @@ if __name__ == "__main__":
     # 2) Load JSON state from previous runs (if any)
     state = load_state()
 
-    # 3) Figure out which cards NEED processing (for ALT later)
+    # 3) Figure out which cards NEED processing (for ALT)
     to_process = []
     for card in cardsList:
         serial = card.get("psa_serial")
@@ -232,12 +327,19 @@ if __name__ == "__main__":
         if needs_processing(card, existing):
             to_process.append(card)
 
-    print(f"[INFO] Cards that would be sent to ALT (not implemented yet): {len(to_process)}")
-    for card in to_process:
-        print(f"  PSA {card['psa_serial']} | {card.get('name')} | GS price: {card.get('regular_price')}")
+    print(f"[INFO] Cards that would be sent to ALT: {len(to_process)}")
 
-    # 4) Update state with latest GameStop info
-    #    (ALT-related fields will be added later when we implement the ALT fetch)
+    # Extract just the serials for the ALT step
+    serials_for_alt = [c["psa_serial"] for c in to_process if c.get("psa_serial")]
+
+    # 4) Send serials to ALT search (no scraping yet, just type + ENTER)
+    #    You can comment this out while debugging.
+    if serials_for_alt:
+        first_serial = serials_for_alt[0]
+        print(f"[INFO] Testing ALT search with serial: {first_serial}")
+        search_alt_for_serial(first_serial)
+
+    # 5) Update state with latest GameStop info
     for card in cardsList:
         serial = card.get("psa_serial")
         if not serial:
@@ -250,25 +352,12 @@ if __name__ == "__main__":
             }
             state[serial] = existing
 
-        # Always update these from the latest scrape
         existing["name"] = card.get("name")
         existing["url"] = card.get("url")
         existing["last_gs_price"] = card.get("regular_price")
         existing["last_gs_pro_price"] = card.get("pro_price")
         existing["psa_grade"] = card.get("psa_grade")
+        # last_checked / last_alt_price will be filled in later
 
-        # Note: we are NOT setting last_checked or last_alt_price yet.
-        # That will happen after we actually send to ALT and get a response.
-
-    # 5) Save updated state back to JSON
+    # 6) Save updated state back to JSON
     save_state(state)
-
-    # If you still want to inspect raw scrape output:
-    # for card in cardsList:
-    #     print(f"Name: {card['name']}")
-    #     print(f"URL: {card['url']}")
-    #     print(f"Regular Price: {card['regular_price']}")
-    #     print(f"Pro Price: {card['pro_price']}")
-    #     print(f"PSA Serial: {card['psa_serial']}")
-    #     print(f"PSA Grade: {card['psa_grade']}")
-    #     print("-" * 40)

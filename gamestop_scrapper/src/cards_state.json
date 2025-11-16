@@ -40,14 +40,6 @@
         "psa_grade": "PSA 9"
     },
     {
-        "psa_serial": "80051918",
-        "name": "2023 Pokemon Japanese Sv2a-pokemon 151 183 Mewtwo Art Rare PSA 10",
-        "url": "https://www.gamestop.com/graded-trading-cards/graded-cards/products/2023-pokemon-japanese-sv2a-pokemon-151-183-mewtwo-art-rare-psa-10/PSA80051918.html",
-        "last_gs_price": 60.99,
-        "last_gs_pro_price": null,
-        "psa_grade": "PSA 10"
-    },
-    {
         "psa_serial": "124573825",
         "name": "2025 Pokemon Dri En-destined Rivals 216 Team Rocket's Nidoking Ex Ultra Rare PSA 10",
         "url": "https://www.gamestop.com/graded-trading-cards/graded-cards/products/2025-pokemon-dri-en-destined-rivals-216-team-rockets-nidoking-ex-ultra-rare-psa-10/PSA124573825.html",
@@ -196,6 +188,14 @@
         "name": "2025 Pokemon Jtg En-journey Together 162 Wailord Illustration Rare PSA 10",
         "url": "https://www.gamestop.com/graded-trading-cards/graded-cards/products/2025-pokemon-jtg-en-journey-together-162-wailord-illustration-rare-psa-10/PSA128338505.html",
         "last_gs_price": 175.99,
+        "last_gs_pro_price": null,
+        "psa_grade": "PSA 10"
+    },
+    {
+        "psa_serial": "131289559",
+        "name": "2025 Pokemon Japanese Mbg-mega Starter Set Mega Gengar Ex 022 Haunter PSA 10",
+        "url": "https://www.gamestop.com/graded-trading-cards/graded-cards/products/2025-pokemon-japanese-mbg-mega-starter-set-mega-gengar-ex-022-haunter-psa-10/PSA131289559.html",
+        "last_gs_price": 161.99,
         "last_gs_pro_price": null,
         "psa_grade": "PSA 10"
     }
